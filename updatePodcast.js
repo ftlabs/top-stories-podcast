@@ -1,8 +1,6 @@
 "use strict";
 
-const { toXML } = require("jstoxml");
 const AWS = require("aws-sdk");
-
 const s3 = new AWS.S3();
 const storage = require("./lib/podcastFeedDb");
 

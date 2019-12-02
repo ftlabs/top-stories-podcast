@@ -15,5 +15,12 @@
   "bugs": {
     "url": "https://github.com/ftlabs/top-stories-podcast/issues"
   },
-  "homepage": "https://github.com/ftlabs/top-stories-podcast#readme"
+  "homepage": "https://github.com/ftlabs/top-stories-podcast#readme",
+  "dependencies": {
+    "aws-sdk": "^2.569.0",
+    "jsdom": "^15.1.1",
+    "node-fetch": "^2.6.0",
+    "readability": "git+https://github.com/mozilla/readability.git",
+    "string-strip-html": "^4.3.7"
+  }
 }
