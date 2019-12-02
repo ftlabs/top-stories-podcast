@@ -1,0 +1,75 @@
+service: top-stories-podcast
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  profile: voting
+  stage: dev
+  region: eu-west-1
+  environment:
+    AUDIO_STORAGE: "${self:service}-${opt:stage, self:provider.stage}-audio-storage"
+    ARTICLE_STORAGE: "${self:service}-${opt:stage, self:provider.stage}-article-storage"
+    PODCAST_FEED: "${self:service}-${opt:stage, self:provider.stage}-podcast-feed"
+    PODCAST_FEED_XML_URL: "https://article-audio-${opt:stage, self:provider.stage}-podcast-feed.s3-eu-west-1.amazonaws.com/index.xml"
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "polly:*"
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: "*"
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:DescribeStream
+        - dynamodb:GetRecords
+        - dynamodb:GetShardIterator
+        - dynamodb:ListStreams
+      Resource:
+        - "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:provider.environment.ARTICLE_STORAGE}"
+
+functions:
+  getAudio:
+    handler: handler.get
+    events:
+      - http:
+          path: get
+          method: get
+          cors:
+            origin: "*"
+  updatePodcast:
+    handler: updatePodcast.trigger
+    events:
+      - stream:
+          type: dynamodb
+          arn:
+            Fn::GetAtt: [ArticleStorage, StreamArn]
+
+resources:
+  Resources:
+    S3BucketOutputs:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.AUDIO_STORAGE}
+    PodcastFeed:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.PODCAST_FEED}
+    ArticleStorage:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+        TableName: ${self:provider.environment.ARTICLE_STORAGE}
